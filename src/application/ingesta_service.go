@@ -37,16 +37,6 @@ func NewIngestaService(
 	}
 }
 
-// HandleMessage procesa un mensaje crudo de la cola kajve_datos de punta a
-// punta: validar -> normalizar/calibrar -> resolver propietario -> persistir
-// -> publicar en tiempo real.
-//
-// Devuelve error SOLO ante fallos transitorios que ameriten reintento (BD o
-// Redis caídos). Un payload inválido o un sensor desconocido se consideran
-// "resueltos" (se loguean y se descartan con error nil), para no atascar la
-// cola reintentando mensajes que nunca van a poder procesarse — ese es el
-// criterio de dead-letter implícito hasta que se configure una DLX real en
-// RabbitMQ (ver Fase 6 del plan).
 func (s *IngestaService) HandleMessage(ctx context.Context, rawBody []byte) error {
 	var payload entities.RawSensorPayload
 	if err := json.Unmarshal(rawBody, &payload); err != nil {
@@ -114,10 +104,6 @@ func (s *IngestaService) HandleMessage(ctx context.Context, rawBody []byte) erro
 	return nil
 }
 
-// normalize traduce el payload crudo del ESP32 (patrón Adapter) a una
-// lectura lista para persistir, usando las banderas mide_viento /
-// mide_radiacion / mide_humedad_grano del sensor para saber qué campos
-// esperar en vez de asumir que todos los dispositivos envían lo mismo.
 func normalize(sensor *entities.Sensor, p *entities.RawSensorPayload) *entities.LecturaAmbiental {
 	l := &entities.LecturaAmbiental{
 		Temperatura:      p.TempAmbienteC,
@@ -126,10 +112,6 @@ func normalize(sensor *entities.Sensor, p *entities.RawSensorPayload) *entities.
 		PresionHpa:       p.PresionHpa,
 		AltitudM:         p.AltitudM,
 		Timestamp:        time.Now().UTC(),
-		// Humedad ambiental (relativa), VelocidadViento y RadiacionSolar
-		// quedan nil -> NULL: este ESP32 no las mide (usa un sensor de
-		// presión/altitud, no uno con humedad, y no tiene anemómetro ni
-		// piranómetro). No se inventan valores.
 	}
 
 	if p.LluviaAnalog != nil {
@@ -142,13 +124,6 @@ func normalize(sensor *entities.Sensor, p *entities.RawSensorPayload) *entities.
 	return l
 }
 
-// normalizeLluvia convierte el valor crudo de ADC (0-4095) a un valor
-// normalizado 0-1, donde 0 = seco y 1 = lluvia máxima detectada.
-//
-// HIPÓTESIS DE CALIBRACIÓN, pendiente de confirmar con quien programó el
-// firmware (ver plan de Ingesta, Sección 3.1): en el payload de referencia,
-// lluvia_analog=4095 corresponde a lluvia_detectada=false (seco), por lo que
-// se asume que valores altos de ADC = seco.
 func normalizeLluvia(raw int) *float64 {
 	if raw < 0 {
 		raw = 0
@@ -160,14 +135,7 @@ func normalizeLluvia(raw int) *float64 {
 	return &v
 }
 
-// calibrateHumedadGrano debería convertir el valor crudo de ADC del sensor
-// capacitivo a un porcentaje 0-100. PENDIENTE: no hay fórmula de calibración
-// confirmada todavía (requiere los puntos de calibración seco/húmedo del
-// sensor físico); por ahora se deja el valor crudo sin transformar, para no
-// insertar una calibración inventada. Ajustar esta función en cuanto exista
-// la fórmula real — está aislada aquí a propósito para que ese cambio no
-// toque el resto del pipeline.
 func calibrateHumedadGrano(raw float64) *float64 {
-	v := raw
-	return &v
+	_ = raw
+	return nil
 }

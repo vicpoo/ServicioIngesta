@@ -1,10 +1,14 @@
 // Servicio de Ingesta IoT — kajve.
 //
-// Consume la cola kajve_datos (exchange amq.topic, routing key kajve.#)
-// donde el ESP32 publica sus lecturas, resuelve a qué productor y lote
-// pertenece cada dato, lo persiste en Postgres respetando RLS, y lo publica
-// en tiempo real por Redis Pub/Sub para que el WebSocket Gateway lo
-// entregue únicamente al dueño del osil.
+// Consume vía MQTT (tópico kajve/#, equivalente a la routing key AMQP
+// kajve.# que usa la cola kajve_datos) los mensajes que el ESP32 publica,
+// resuelve a qué productor y lote pertenece cada dato, lo persiste en
+// Postgres respetando RLS, y lo publica en tiempo real por Redis Pub/Sub
+// para que el WebSocket Gateway lo entregue únicamente al dueño del osil.
+//
+// Además, si RABBITMQ_MGMT_URL está configurado, drena en paralelo la cola
+// kajve_datos vía la API HTTP de administración de RabbitMQ — es un
+// respaldo mientras el puerto AMQP 5672 no esté expuesto en el servidor.
 package main
 
 import (
@@ -35,15 +39,25 @@ func main() {
 	}
 	defer container.Close()
 
-	// Consumidor de RabbitMQ en segundo plano: es el corazón del servicio.
+	// Consumidor MQTT en segundo plano: es el corazón del servicio.
 	consumerDone := make(chan struct{})
 	go func() {
 		defer close(consumerDone)
-		log.Printf("main: iniciando consumidor de RabbitMQ (cola=%q)", "kajve_datos")
+		log.Println("main: iniciando consumidor MQTT")
 		if err := container.Consumer.Consume(ctx, container.IngestaService.HandleMessage); err != nil {
-			log.Printf("main: el consumidor de RabbitMQ terminó: %v", err)
+			log.Printf("main: el consumidor MQTT terminó: %v", err)
 		}
 	}()
+
+	// Poller HTTP de RabbitMQ (opcional): drena kajve_datos directamente,
+	// incluyendo el backlog que ya estaba acumulado antes de que este
+	// servicio arrancara.
+	if container.HTTPPoller != nil {
+		go func() {
+			log.Println("main: iniciando drenado HTTP de RabbitMQ")
+			container.HTTPPoller.Run(ctx, container.IngestaService.HandleMessage)
+		}()
+	}
 
 	// Servidor HTTP en :8001, principalmente para health checks.
 	router := routes.NewRouter()
