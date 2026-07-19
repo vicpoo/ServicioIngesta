@@ -1,3 +1,4 @@
+//src/domain/interface.go
 // Package domain define los puertos (interfaces) del hexágono: lo que la
 // capa application necesita, sin saber cómo infrastructure lo implementa.
 package domain

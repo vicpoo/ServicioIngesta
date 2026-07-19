@@ -1,3 +1,4 @@
+//src/infrastructure/repository/lote_repository.go
 package repository
 
 import (

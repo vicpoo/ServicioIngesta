@@ -1,3 +1,4 @@
+// src/infrastructure/dependencies/config.go
 package dependencies
 
 import (

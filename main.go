@@ -1,3 +1,4 @@
+//main.go
 // Servicio de Ingesta IoT — kajve.
 //
 // Consume vía MQTT (tópico kajve/#, equivalente a la routing key AMQP

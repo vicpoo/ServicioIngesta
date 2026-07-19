@@ -1,3 +1,4 @@
+//src/infrastructure/rabbitmq/consumer.go
 // Package rabbitmq consume la cola donde el ESP32 publica sus lecturas.
 package rabbitmq
 

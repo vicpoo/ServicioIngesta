@@ -1,3 +1,4 @@
+//src/application/ingesta_service.go
 // Package application contiene los casos de uso: la orquestación del
 // hexágono, sin saber nada de Postgres, RabbitMQ ni Redis en concreto
 // (solo conoce los puertos definidos en domain).

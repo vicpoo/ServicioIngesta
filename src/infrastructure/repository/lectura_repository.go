@@ -1,3 +1,4 @@
+//src/infrastructure/repository/lectura_repository.go
 package repository
 
 import (

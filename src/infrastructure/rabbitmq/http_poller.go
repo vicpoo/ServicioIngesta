@@ -1,3 +1,4 @@
+//src/infrastructure/rabbitmq/http_poller.go
 // Este archivo SÍ está activo (a diferencia de consumer.go en este mismo
 // paquete, que quedó descontinuado). Drena la cola kajve_datos usando la
 // API HTTP de administración de RabbitMQ (la misma que usa la interfaz web

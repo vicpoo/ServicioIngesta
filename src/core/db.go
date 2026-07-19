@@ -1,3 +1,4 @@
+//src/core/db.go
 // Package core contiene la conexión a la base de datos y el patrón de RLS
 // compartido por todos los repositorios de infrastructure.
 package core

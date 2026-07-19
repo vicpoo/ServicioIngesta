@@ -1,3 +1,4 @@
+//src/infrastructure/routes/routes.go
 // Package routes define las rutas HTTP del servicio. Ingesta es
 // principalmente un consumidor de RabbitMQ; el servidor HTTP en el puerto
 // 8001 existe para health checks (y como base para futuros endpoints de

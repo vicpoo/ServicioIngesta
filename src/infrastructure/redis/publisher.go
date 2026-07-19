@@ -1,3 +1,4 @@
+//src/infrastructure/redis/publisher.go
 // Package redis implementa domain.RealtimePublisher sobre Redis Pub/Sub,
 // el mismo mecanismo que ya anticipa el WebSocketManager de api-mobile
 // (internal/delivery/websocket/manager.go), aunque aún no está conectado

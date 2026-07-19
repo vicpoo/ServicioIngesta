@@ -1,3 +1,4 @@
+//src/infrastructure/mqtt/consumer.go
 // Package mqtt consume mensajes directamente por MQTT desde RabbitMQ (su
 // plugin MQTT), como alternativa al consumidor AMQP de
 // infrastructure/rabbitmq cuando el puerto 5672 (AMQP) no está expuesto y

@@ -1,3 +1,4 @@
+//src/domain/entities/entities.go
 // Package entities contiene los modelos de dominio del servicio de Ingesta.
 package entities
 

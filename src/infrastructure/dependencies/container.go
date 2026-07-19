@@ -1,3 +1,4 @@
+//src/infrastructure/dependencies/container.go
 // Package dependencies arma (wiring) todas las piezas del servicio:
 // configuración, conexión a BD, repositorios, publisher de Redis,
 // consumidor MQTT y el caso de uso de application, todo detrás de los
