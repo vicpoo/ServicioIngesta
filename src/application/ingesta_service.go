@@ -86,13 +86,17 @@ func (s *IngestaService) HandleMessage(ctx context.Context, rawBody []byte) erro
 		Timestamp: lectura.Timestamp,
 		Lectura: entities.LecturaAmbientalDTO{
 			Temperatura:      lectura.Temperatura,
-			Humedad:          lectura.Humedad,
 			TemperaturaGrano: lectura.TemperaturaGrano,
 			Luz:              lectura.Luz,
-			Lluvia:           lectura.Lluvia,
+			LluviaAnalog:     lectura.LluviaAnalog,
+			LluviaDetectada:  lectura.LluviaDetectada,
 			HumedadGrano:     lectura.HumedadGrano,
 			PresionHpa:       lectura.PresionHpa,
 			AltitudM:         lectura.AltitudM,
+			// Passthrough directo del payload crudo del ESP32: no pasa por
+			// normalize() ni por LecturaAmbiental a propósito, para que sea
+			// imposible que termine en el INSERT de lectura_repository.go.
+			EstadoSensores: payload.EstadoSensores,
 		},
 	}
 	if err := s.realtime.PublishToUser(ctx, lote.UsuarioID, event); err != nil {
@@ -105,6 +109,10 @@ func (s *IngestaService) HandleMessage(ctx context.Context, rawBody []byte) erro
 	return nil
 }
 
+// normalize traduce el payload crudo del ESP32 a una lectura lista para
+// persistir. Desde la migración de BD, lluvia_analog y humedad_grano viajan
+// como lecturas crudas del ADC (0-4095) y se guardan tal cual en columnas
+// smallint — ya no se normalizan a un rango 0-1 ni se descartan.
 func normalize(sensor *entities.Sensor, p *entities.RawSensorPayload) *entities.LecturaAmbiental {
 	l := &entities.LecturaAmbiental{
 		Temperatura:      p.TempAmbienteC,
@@ -112,31 +120,18 @@ func normalize(sensor *entities.Sensor, p *entities.RawSensorPayload) *entities.
 		Luz:              p.LuzLux,
 		PresionHpa:       p.PresionHpa,
 		AltitudM:         p.AltitudM,
+		LluviaDetectada:  p.LluviaDetectada,
 		Timestamp:        time.Now().UTC(),
 	}
 
 	if p.LluviaAnalog != nil {
-		l.Lluvia = normalizeLluvia(*p.LluviaAnalog)
+		v := int16(*p.LluviaAnalog)
+		l.LluviaAnalog = &v
 	}
 	if sensor.MideHumedadGrano && p.HumedadGrano != nil {
-		l.HumedadGrano = calibrateHumedadGrano(*p.HumedadGrano)
+		v := int16(*p.HumedadGrano)
+		l.HumedadGrano = &v
 	}
 
 	return l
-}
-
-func normalizeLluvia(raw int) *float64 {
-	if raw < 0 {
-		raw = 0
-	}
-	if raw > 4095 {
-		raw = 4095
-	}
-	v := float64(4095-raw) / 4095.0
-	return &v
-}
-
-func calibrateHumedadGrano(raw float64) *float64 {
-	_ = raw
-	return nil
 }
